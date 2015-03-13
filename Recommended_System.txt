@@ -1,0 +1,15 @@
+{
+    "Java heap size": "2 GB",
+    "Version": "64Bit",
+    "Disk space for installation (imcInstallDir)": "3 GB",
+    "Disk space for data storage (imcDataDir)": "30 GB",
+    "Node count": "200",
+    "DevOS": "",
+    "Module": "PLAT",
+    "CPU (main frequency ? 2.0 GHz)": "2-core CPU",
+    "Collection units": "5000",
+    "Max. online operators": "20",
+    "CoRes": "y",
+    "Memory ": "4 GB",
+    "OS": "Windows"
+}
