@@ -1,10 +1,11 @@
 
-#   IMC Hardware Design Project 1.0
+#   IMC Hardware Design Project 1.7
 #  Chris Young a.k.a Darth
 #
-#Hewlett Packard Company    Revision 1.0
+#Hewlett Packard Company    Revision 1.7
 #
 #Change History.... 3/19/15
+#Changes based on user feedback. 3/29/15
 #
 
 #This series of functions is intended to help gather customer requirements and provide
@@ -14,13 +15,19 @@
 import os, json, sys, time, subprocess, csv, time, datetime
 from subprocess import call
 
-
-
-#This section initialises the global variables
+version_num = "1.7"
 plat_nodes = 0
 plat_col_units = 0
 plat_operators = 0
 plat_os = ""
+
+#This section initialises the global variables
+def init_design_tool():
+        plat_nodes = 0
+        plat_col_units = 0
+        plat_operators = 0
+        plat_os = ""
+        return plat_nodes, plat_col_units, plat_operators, plat_os
 
 #This section collects responses from the user to calculate the IMC Base Platform Requirements
 '''===========================================================================================
@@ -28,7 +35,9 @@ plat_os = ""
 =============================================================================================='''
 def gather_plat_req():
         '''Called by _main_ function and will call the various gathering functions.'''
-        global plat_nodes, plat_col_units, plat_operators, plat_os
+        global plat_nodes, plat_col_units, plat_operators, plat_os, created_by
+        init_design_tool()
+        created_by = get_created_by()
         print ('''\n\n==============\n\nThis section will gather information specific to the HP IMC Platform.\n Other IMC modules will be covered in a future version of this tool\n\n==============''')
         plat_os = get_plat_os()     #See get_plat_os function for more info
         plat_operators = get_plat_operators()
@@ -36,17 +45,18 @@ def gather_plat_req():
         get_stack_dev()
         get_server_dev()
         
+        
         print('\n\n==============\n\nTotal nodes is : ' + str(plat_nodes))
         print ("Total collection units calculated is is: "+ str(plat_col_units))
         print("Total concurrent operators is " +str(plat_operators)+'\n\n==============\n\n')
         return plat_operators, plat_col_units, plat_nodes, plat_os
 
-#Error Handling for Initial Questions
+#Functions to support Initial Questions
 '''===========================================================================================
 
 =============================================================================================='''
 def get_plat_os():
-        '''This function is called by the gather_plat_req function and is used to gather platform OS information from user.'''
+        '''This function is called by the gather_plat_req function and is used to gather platform OS information from user.\nPlease refer to the release notes for specific OS version support.'''
         plat_os = input('What Operating System do you intend to use:\n1)Red Hat Enterprise Linux\n2)Windows\n :')
         if plat_os == '1':
              plat_os = "Linux"
@@ -92,9 +102,16 @@ def get_plat_operators():   #gather platform operator numbers
         print('\n'*80)
         return plat_operators
 
+def get_created_by(author_name=None):  # gather design author information
+        '''This function is called by the gather_plat_req function and is used to gather user input and return the var created_by for use in the final report'''
+        if author_name == None:
+                created_by = input("Please input your name or email address.\nThis will be included as the author of the output report\n:")
+        print (created_by)
+        return created_by
+
 def get_single_dev():
     '''This function is called by the gather_plat_req function and is used to gather single device information from user.'''    
-    single_dev = input('\n\n==============\n\nDo you want to manage single network devices?\nThis includes routers, wireless controllers, and non-stacked switches\nY/N: ')
+    single_dev = input('\n\n==============\n\nDo you want to manage single network devices?\nThis includes routers, wireless controllers, and other infrastructure devices configured with SNMP that you wish to monitor.\n This does not include stacked switches or servers which will be dealt with below.\nY/N: ')
     if single_dev == '':
         print("Error Invalid Input.\nPlease select Y or N.")
         time.sleep(2)
@@ -166,6 +183,56 @@ def get_server_dev():
         time.sleep(2)
         print('\n'*80)
         get_server_dev()
+
+#Gather Single device management requirements
+'''===========================================================================================
+
+=============================================================================================='''
+def SingleDevices():
+       global plat_nodes, plat_col_units
+       print ("\n\n==============\n\nNetwork Device Section:\n This section deals with SNMP configured network devices that you wish to manage.")
+       single_devices= get_single_count()
+       print('\n'*80)
+       number_of_interfaces = get_interface_count()
+       print('\n'*80)      
+       number_of_monitors = get_monitors_count()
+       print('\n'*80)
+       poll_interval = get_poll_interval()
+       print('\n'*80)
+       cpu = (1)
+       memory = (1)
+       reachability = (1)
+       response_time = (1)
+       total_instances = int( (number_of_interfaces * number_of_monitors ) + cpu + memory +reachability + response_time)
+       polled_units = int(single_devices*total_instances)
+       single_dev_units = (polled_units*(5/poll_interval))
+       plat_col_units = ( plat_col_units + single_dev_units )
+       plat_nodes = (plat_nodes + single_devices)
+       return plat_col_units, plat_nodes
+
+def get_single_count():
+    '''This function is called by the ServerDevices function and is used to calculate the total number of single devices to be monitored.
+        It will take a the user input and return the var single_devices.'''    
+    single_devices = input('''\n\n==============\n\nWhat is the total number of network devices you wish to monitor?\n: ''')
+    if single_devices == '':
+        print("You must input a number between 1 and 15000")
+        time.sleep(2)
+        print('\n'*80)
+        get_single_count()
+    elif is_number(single_devices) == False or int(single_devices) < 1:
+        print ("You must input a number between 1 and 15000")
+        time.sleep(2)
+        print('\n'*80)
+        get_single_count()
+    elif int(single_devices) > 15000 :
+        print('You have exceeded the maximum capabilities of a single IMC system.\nYou may wish to consider a hierarchical design.\nPlease input a number between 1 and 15000: "')
+        time.sleep(2)
+        get_server_count()
+    else:
+        single_devices = int(single_devices)
+        return single_devices
+
+
 
 #Gather Stacked device management requirements
 '''===========================================================================================
@@ -286,7 +353,7 @@ def ServerDevices():
 def get_server_count():
     '''This function is called by the ServerDevices function and is used to calculate the total number of servers to be monitored.
         It will take a the user input and return the var server_devices.'''    
-    server_devices = (input("\n\n==============\n\n\n\n==============\n\nWhat is the total number of Servers you want to monitor?\n: "))
+    server_devices = (input("\nWhat is the total number of Servers you want to monitor?\n: "))
     if server_devices == '':
         print("You must input a number between 1 and 15000")
         time.sleep(2)
@@ -359,101 +426,81 @@ def get_drives_quant():
         num_drives = int(num_drives)
         return num_drives
 
-#Gather Single device management requirements
-'''===========================================================================================
-
-=============================================================================================='''
-def SingleDevices():
-       global plat_nodes, plat_col_units
-       print ("\n\n==============\n\nNetwork Device Section:\n This section deals with SNMP configured network devices that you wish to manage.")
-       single_devices= get_single_count()
-       print('\n'*80)
-       number_of_interfaces = get_interface_count()
-       print('\n'*80)      
-       number_of_monitors = get_monitors_count()
-       print('\n'*80)
-       poll_interval = get_poll_interval()
-       print('\n'*80)
-       cpu = (1)
-       memory = (1)
-       reachability = (1)
-       response_time = (1)
-       total_instances = int( (number_of_interfaces * number_of_monitors ) + cpu + memory +reachability + response_time)
-       polled_units = int(single_devices*total_instances)
-       single_dev_units = (polled_units*(5/poll_interval))
-       plat_col_units = ( plat_col_units + single_dev_units )
-       plat_nodes = (plat_nodes + single_devices)
-       return plat_col_units, plat_nodes
-
-def get_single_count():
-    '''This function is called by the ServerDevices function and is used to calculate the total number of single devices to be monitored.
-        It will take a the user input and return the var single_devices.'''    
-    single_devices = input('''\n\n==============\n\nWhat is the total number of network devices you wish to monitor?\n: ''')
-    if single_devices == '':
-        print("You must input a number between 1 and 15000")
-        time.sleep(2)
-        print('\n'*80)
-        get_single_count()
-    elif is_number(single_devices) == False or int(single_devices) < 1:
-        print ("You must input a number between 1 and 15000")
-        time.sleep(2)
-        print('\n'*80)
-        get_single_count()
-    elif int(single_devices) > 15000 :
-        print('You have exceeded the maximum capabilities of a single IMC system.\nYou may wish to consider a hierarchical design.\nPlease input a number between 1 and 15000: "')
-        time.sleep(2)
-        get_server_count()
-    else:
-        single_devices = int(single_devices)
-        return single_devices
 
 
 #This section will import the HPIMCHardwareSchemes.csv file as list of dictionaries and compare the values collected above to provide hardware platform recommendations
 
 def Plat_HW_Guidance():
             #import csv file as dictionary
+        current_date = datetime.datetime.strftime(datetime.datetime.now(), '%Y%m%d %H%M%S')
+        design_name = str("HP_IMC_DESIGN"+current_date+".txt")                    
+        if int(plat_nodes) > 15000:
+            print('''Your number of managed nodes has exceeded the maximum capabilities of a single HP IMC system.
+                  \nPlease consider one of the following:
+                  \n- Decrease the total number of managed device
+                  \n- Consider a hierarchical design''')
+            rerun_calc()
+        elif (int(plat_operators) > 20 and int(plat_col_units) > 40000):
+            print ('''Your number of online operators and collection units has exceeded the maximum capabilities of a single HP IMC System.
+                   \n-Please consider one of the following:
+                   \n- decrease the number of concurrent online operators
+                   \n- Increase the number of minutes to wait between SNMP polling the devices
+                   \n- Decrease the number of SNMP polled metrics
+                   \n- Consider a hierarchical design.''')
+            rerun_calc()
+        elif int(plat_col_units) > 400000:
+            print('''The number of total collection units has exceed the maximum capabilities of a single HP IMC System.
+                  \nPlease consider one of the following:
+                  \n- Increase the number of minutes to wait between SNMP polling the devices
+                  \n- Decrease the number of SNMP polled metrics
+                  \n- Consider a hierarchical design.''')
+            rerun_calc()
+        else:          
             with open ('HPIMC_Plat_HardwareSchemes.csv') as csvfile:
-                       reader = csv.DictReader(csvfile)
-                       for i in reader:
-                               if ('PLAT' == i['Module'] and
-                                   plat_os == i['OS'] and
-                                   int(plat_operators) <= int(i['Max. online operators']) and
-                                   int(plat_nodes) <= int(i['Node count']) and
+                reader = csv.DictReader(csvfile)
+                for i in reader:
+                        if ('PLAT' == i['Module'] and
+                            plat_os == i['OS'] and
+                            int(plat_operators) <= int(i['Max. online operators']) and
+                            int(plat_nodes) <= int(i['Node count']) and
                                    int(plat_col_units)  <= int(i['Collection units'])):
                                    current_time = datetime.datetime.strftime(datetime.datetime.now(), '%Y-%m-%d %H:%M:%S')
-                                   with open("Recommended_System.txt", "w") as text_file:
-                                           print ('''HP IMC Platform Sizing Utility Output
+                                   with open(design_name, "w") as text_file:
+                                           print (('''HP IMC Platform Sizing Utility Version '''+version_num + '''
                                                   \n+=================================================================+
                                                   \nDISCLAIMER:
                                                   \nThis tool is intended to help you calculate the hardware platform requirements for the HP IMC  platform.
                                                   \nIn the occurrence of a disagreement, the official HP product documentation will be considered as correct.
                                                   \nThis tool is provided as-is with no warranty expressed or implied.
                                                   \nThis tool is for HP Internal Use Only and should be considered restricted and confidential.
-                                                  \n+=================================================================+'''
-                                                  +'''\nTime of Creation: '''+current_time+ '''\n=================================================================
-                                           \nBased on your inputs, we have calculated the following requirements:
-                                           \n=================================================================
-                                           \nTotal Number of Nodes: '''+str(plat_nodes)+'''
-                                           \nTotal Number of Collection Units: '''+str(plat_col_units)+'''
-                                           \nTotal Number of Online Operators: '''+str(plat_operators)+'''
-                                           \nOperating System: '''+i['OS']+'''
-                                           \n32 or 64 Bit: '''+i["Version"]+'''
-                                           \n\n=================================================================
-                                           \nBased on your stated requirements, the recommended hardware platform is as follows:
-                                           \nCPU: '''+i["CPU (main frequency ? 2.0 GHz)"]+'''
-                                           \nMemory: '''+i["Memory "]+'''
-                                           \nHard Drive Space: '''+i["Disk space for data storage (imcDataDir)"] +'''
-                                           \n=================================================================
-                                           \nThe recommended platform has the following characteristics :
-                                           \nMaximum Managed Nodes: '''+ i["Node count"]+ '''
-                                           \nMaximum Collection Units: ''' + i["Collection units"]+'''
-                                           \nMaximum Online Operators: ''' + i["Max. online operators"], file=text_file)
+                                                  \n+=================================================================+''')
+                                                  +('''\nTime of Creation: ''') + (current_time)
+                                                  +'''\nDesign Created by: ''' +created_by+'''\n=================================================================
+                                                  \nBased on your inputs, we have calculated the following requirements:
+                                                  \n=================================================================
+                                                  \nTotal Number of Nodes: '''+str(plat_nodes)+'''
+                                                  \nTotal Number of Collection Units: '''+str(plat_col_units)+'''
+                                                  \nTotal Number of Online Operators: '''+str(plat_operators)+'''
+                                                  \nOperating System: '''+i['OS']+'''
+                                                  \n32 or 64 Bit: '''+i["Version"]+'''
+                                                  \n\n=================================================================
+                                                  \nBased on your stated requirements, the recommended hardware platform is as follows:
+                                                  \nCPU: '''+i["CPU (main frequency ? 2.0 GHz)"]+'''
+                                                  \nMemory: '''+i["Memory "]+'''
+                                                  \nHard Drive Space: '''+i["Disk space for data storage (imcDataDir)"] +'''
+                                                  \n=================================================================
+                                                  \nThe recommended platform has the following characteristics :
+                                                  \nMaximum Managed Nodes: '''+ i["Node count"] + '''
+                                                  \nMaximum Collection Units: '''+ i["Collection units"] +'''
+                                                  \nMaximum Online Operators: '''+ i["Max. online operators"],
+                                                  file=text_file)
                                            break
-                               else:
-                                  continue
-            print(" Please open the file Recommended_System.txt located in the same directory as the sizing tool")
-            time.sleep(5)
-            call("notepad Recommended_System.txt")
+                        else:
+                            continue
+                print(" Please wait whle your design is calculated. The report can be located in the same directory as the sizing tool")
+                time.sleep(5)
+                call("notepad "+design_name)
+                rerun_calc()
 #test functions
 def is_string(s):
     try:
@@ -467,10 +514,13 @@ def is_number(s):
         return True
     except ValueError:
         return False
+def rerun_calc():
+        wait_time = input('''\n\n...Please hit enter to rerun the HP IMC Platform sizing calculator...''')
+        main()
 
 def get_interface_count():
     '''Called by multiple functions. Gathers the number of ethernet interfaces to be monitored for a given device'''
-    number_of_interfaces = input('''\n\n==============\n\nWhat is the average number of ethernet interfaces you want to monitor?\nIf unknown, please input a default value of "4".\n: ''')
+    number_of_interfaces = input('''\n\n==============\n\nWhat is the average number of ethernet interfaces you want to monitor with SNMP?\nA typical example might be an interface which connects to another infratructure device.\nIf unknown, please input a default value of "2".\n: ''')
     if number_of_interfaces == '':
         print("You must input a valid number of ethernet interfaces.")
         time.sleep(2)
@@ -487,7 +537,7 @@ def get_interface_count():
 
 def get_monitors_count():
     '''Called by multiple functions. Gathers the number of SNMP polled elementsto be monitored for a given device'''
-    number_of_interfaces = input('''\n\n==============\n\nWhat is the average number of SNMP metrics you want to monitor per interface: \nIf unknown, please input a default value of "8"\n: ''')
+    number_of_interfaces = input('''\n\n==============\n\nWhat is the average number of SNMP metrics per monitored interface that you want to monitor?: \nExamples would be bandwidth statistics, error statistics, or temperature monitors.\nIf unknown, please input a default value of "8"\n: ''')
     if number_of_interfaces == '':
         print("You must input a valid number of SNMP monitors per interfaces.")
         time.sleep(2)
@@ -520,7 +570,7 @@ def get_poll_interval():
         return poll_interval
 
 def get_imc_plat_recommendations():
-    imc_plat = input("\n\n==============\n\nWould you like to design a new HP IMC System?\n: ")
+    imc_plat = input("\n\n==============\n\nWould you like to design a new HP IMC System?\nY/N: ")
     if imc_plat == "Y" or imc_plat == "y":
         print ("\n" *80) 
         gather_plat_req()
@@ -555,7 +605,8 @@ def main():
   |     | | This tool is for HP Internal Use Only and should be |   |      |
   |     | |       considered restricted and confidential.       |   |      |
   |     | +-----------------------------------------------------+   |      |
-  +------------------------------------------------------------------------+''')
+  +------------------------------------------------------------------------+
+  \nCalculator Version:''' + version_num)
     get_imc_plat_recommendations()
     print ("Thank you. Come Again.")
     time.sleep(5)

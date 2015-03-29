@@ -11,9 +11,9 @@ executables = [
 ]
 
 setup(name='HP_IMC_Sizing_Calculator',
-      version = '1.6',
+      version = '1.7',
       author = '@netmanchris',
-      description = 'HP IMC Sizing Calculator version 1.6\n Platform Only',
+      description = 'HP IMC Sizing Calculator version 1.7\n Platform Only',
       options = dict(build_exe = buildOptions),
       executables = executables)
 

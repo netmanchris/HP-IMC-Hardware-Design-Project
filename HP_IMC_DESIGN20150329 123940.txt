@@ -1,0 +1,53 @@
+HP IMC Platform Sizing Utility Output
+                                                  
++=================================================================+
+                                                  
+DISCLAIMER:
+                                                  
+This tool is intended to help you calculate the hardware platform requirements for the HP IMC  platform.
+                                                  
+In the occurrence of a disagreement, the official HP product documentation will be considered as correct.
+                                                  
+This tool is provided as-is with no warranty expressed or implied.
+                                                  
+This tool is for HP Internal Use Only and should be considered restricted and confidential.
+                                                  
++=================================================================+
+Time of Creation: 2015-03-29 12:39:40
+Design Created by: chris.s.young@hp.com
+=================================================================
+                                                  
+Based on your inputs, we have calculated the following requirements:
+                                                  
+=================================================================
+                                                  
+Total Number of Nodes: 14000
+                                                  
+Total Number of Collection Units: 280000.0
+                                                  
+Total Number of Online Operators: 10
+                                                  
+Operating System: Linux
+                                                  
+32 or 64 Bit: 64Bit
+                                                  
+
+=================================================================
+                                                  
+Based on your stated requirements, the recommended hardware platform is as follows:
+                                                  
+CPU: 24-core CPU
+                                                  
+Memory: 64G
+                                                  
+Hard Drive Space: 600 GB
+                                                  
+=================================================================
+                                                  
+The recommended platform has the following characteristics :
+                                                  
+Maximum Managed Nodes: 15000
+                                                  
+Maximum Collection Units: 400000
+                                                  
+Maximum Online Operators: 20
